@@ -62,6 +62,12 @@ jobs:
           touch _site/.nojekyll
           cp index.html ContainerDemo0.svg _site/
           cp -R css img _site/
+          sed -i 's|/svgmapAppLayers/|https://svgmap.github.io/svgmapAppLayers/|g' _site/ContainerDemo0.svg
+
+      - name: Check deployed layer references
+        run: |
+          grep -q "https://svgmap.github.io/svgmapAppLayers/basemaps/dynamicOSM_r11.svg" _site/ContainerDemo0.svg
+          ! grep -q 'xlink:href="/svgmapAppLayers/' _site/ContainerDemo0.svg
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
