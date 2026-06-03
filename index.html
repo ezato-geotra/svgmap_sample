@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <title>SVGMap Sample</title>
+    <meta name="viewport" content="width=device-width,user-scalable=no,initial-scale=1.0,maximum-scale=1.0" />
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+    <!-- レイヤーリストUIのスタイルシート読み込み -->
+    <link href="./css/layerListStyle.css" rel="stylesheet" type="text/css">
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+
+    <script type="text/javascript" src="https://unpkg.com/jsts@1.6.1/dist/jsts.min.js"></script>
+    <script type="module">
+        import { CorsProxy } from 'https://cdn.jsdelivr.net/gh/svgmap/svgmapjs@latest/CorsProxyModule.js';
+        import { svgMap } from 'https://cdn.jsdelivr.net/gh/svgmap/svgmapjs@latest/SVGMapLv0.1_r18module.js';
+        window.svgMap=svgMap
+        const corsProxy = new CorsProxy();
+
+        // プロキシの設定
+        const proxyPath = `${window.location.origin}/corsaw/proxy.php?csurl=`; // docker内のphp-cross-domain-proxy
+        corsProxy.setService(proxyPath, null, true, true);
+        window.corsProxy = corsProxy;
+        svgMap.setProxyURLFactory(
+            null,
+            null,
+            null,
+            corsProxy.getURLfunction(), // ビットイメージ非線形図法変換の時のみプロキシを使う
+            true,
+            null
+        );
+
+        // ハイライトの設定
+        if ( svgMap.setDefaultHilightStyle ){
+            svgMap.setDefaultHilightStyle({ fill:{color:"",lineWidth:2,lineColor:"red"}})
+        }
+
+        document.getElementById('areaSelect').addEventListener('change', function (e) {
+            switch (e.target.value) {
+                case 'all':
+                    svgMap.setGeoCenter(35, 134, 22)
+                    break;
+                case '47':
+                    svgMap.setGeoCenter(26.212421 , 127.681188, 0.01)
+                    break;
+                default:
+                    break;
+            }
+        });
+        document.getElementById('baseStationSearchButton').addEventListener('click', function (e) {
+            const searchQuery = '';
+            const text = document.getElementById('baseStationSearchInput').value;
+            if (text) {
+                const queryType = document.querySelector('input[name="contact"]:checked').value;
+                // ここで検索ようクエリを生成する
+                switch (queryType) {
+                    case 'equal':
+                        console.log(`検索ワード: ${text}, 検索タイプ: 等価検索`);
+                        break;
+                    case 'like':
+                        console.log(`検索ワード: ${text}, 検索タイプ: 類似検索`);
+                        break;
+                    default:
+                        console.error('検索タイプが選択されていません');
+                        break;
+                }
+                // 外部APIを実行し、検索結果をモーダル表示する
+                const exampleModal = new bootstrap.Modal(document.getElementById('exampleModal'));
+                exampleModal.show();
+            }
+        })
+    </script>
+</head>
+<body bgcolor="#ffffff" style="overflow:hidden;" >
+<div id="mapcanvas" data-src="ContainerDemo0.svg" data-custom-layers-root="./customLayerSettings/"></div>
+<div id="gui">
+    <img id="zoomupButton" style="left: 5px; top: 5px; position: absolute;" src="./img/zoomup.png" onclick="svgMap.zoomup()" width="20" height="20" />
+    <img id="zoomdownButton" style="left: 5px; top: 25px; position: absolute;" src="./img/zoomdown.png" onclick="svgMap.zoomdown()" width="20" height="20" />
+    <img id="gpsButton" style="left: 5px; top: 45px; position: absolute;" src="./img/gps.png" onclick="svgMap.gps()" width="20" height="20" />
+
+    <img id="centerSight" style="opacity:0.5" src="./img/Xcursor.png" width="15" height="15"/>
+    <table style="left: 10px; bottom: 5px; position: absolute;font-size:12px;font-weight: bold;color:red;background-color: rgb(0 0 0 / 0.4);">
+        <tr><td>Lat,Lng:</td><td id="centerPos"></td></tr>
+    </table>
+
+    <img id="vscaleImg" style="left: 5px; bottom: 42px; position: absolute;" src="./img/vscale.png" />
+    <font id="vScale" size="-2" color="black" style="left: 5px; bottom: 28px; position: absolute;">xxx Km</font>
+
+    <div id="layerList" style="left :30px; top: 10px; width:300px;height:90%; position: absolute; " data-customizer="./SVGMapCustomLayersManager.html" data-layerstylecontroller data-hiddenfilter></div>
+
+    <select id="areaSelect" style="left :340px; top: 10px; width:130px;position: absolute;">
+        <option value="" selected>===全国===</option>
+        <option value="all">全国表示</option>
+        <option>===九州===</option>
+        <option value="47">沖縄</option>
+    </select>
+    <div id="baseStationSearchArea" style="right: 0; top: 10px; width:300px;height:90%; position: absolute;">
+        <input id="baseStationSearchInput" type="text" />
+        <button id="baseStationSearchButton">検索</button>
+        <br>
+        <label>
+            <input type="radio" name="contact" value="equal" checked> 完全一致
+        </label>
+        <label>
+            <input type="radio" name="contact" value="like"> 部分一致
+        </label>
+    </div>
+    <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="exampleModalLabel">検索結果</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    ...
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary">Save changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="baseStationSearchResult" style="display: none;left: calc((100% / 2) - 150px);top: calc((100% / 2) - 100px); width: 300px;height: 200px;position: absolute;background-color: lightgrey">
+        <h1>検索結果</h1>
+        <table>
+            <thead>
+            <tr>
+                <td>基地局名</td>
+                <td>エリア</td>
+                <td></td>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                <td>テスト1</td>
+                <td>北海道</td>
+                <td>移動</td>
+            </tr>
+            <tr>
+                <td>テスト2</td>
+                <td>北海道</td>
+                <td>移動</td>
+            </tr>
+            <tr>
+                <td>テスト3</td>
+                <td>北海道</td>
+                <td>移動</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+    <div id="layerSpecificUI" style="right :10px; top: 40px; width:400px;height:400px; position: absolute; background-color: white;opacity:0.8;display:none;"></div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
+</body>
+</html>
