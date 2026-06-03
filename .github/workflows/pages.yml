@@ -1,0 +1,76 @@
+name: Docker smoke test and deploy Pages
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  docker-smoke-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build and start Docker container
+        run: docker compose up -d --build
+
+      - name: Wait for Apache
+        run: |
+          for i in {1..30}; do
+            if curl -fsS http://localhost:8080/ >/dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          docker compose logs
+          exit 1
+
+      - name: Check index.html
+        run: curl -fsS http://localhost:8080/ | grep -q "SVGMap Sample"
+
+      - name: Check PHP proxy
+        run: curl -fsS "http://localhost:8080/corsaw/proxy.php?csurl=https://example.com/" | grep -q "Example Domain"
+
+      - name: Stop Docker container
+        if: always()
+        run: docker compose down
+
+  deploy-pages:
+    needs: docker-smoke-test
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Prepare static site
+        run: |
+          mkdir -p _site
+          touch _site/.nojekyll
+          cp index.html ContainerDemo0.svg _site/
+          cp -R css img _site/
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
