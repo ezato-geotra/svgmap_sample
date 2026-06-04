@@ -65,13 +65,12 @@ jobs:
           mkdir -p _site/svgmapAppLayers/basemaps
           curl -fsSL https://svgmap.github.io/svgmapAppLayers/basemaps/dynamicOSM_r11.svg -o _site/svgmapAppLayers/basemaps/dynamicOSM_r11.svg
           curl -fsSL https://svgmap.github.io/svgmapAppLayers/basemaps/dynamicOSM_r11.html -o _site/svgmapAppLayers/basemaps/dynamicOSM_r11.html
-          sed -i 's|/svgmapAppLayers/|https://svgmap.github.io/svgmapAppLayers/|g' _site/ContainerDemo0.svg
-          sed -i 's|https://svgmap.github.io/svgmapAppLayers/basemaps/dynamicOSM_r11.svg|./svgmapAppLayers/basemaps/dynamicOSM_r11.svg|g' _site/ContainerDemo0.svg
           sed -i 's|`${window.location.origin}/corsaw/proxy.php?csurl=`|`https://service.svgmap.org/corsaw/`|g' _site/index.html
 
       - name: Check deployed layer references
         run: |
           grep -q "./svgmapAppLayers/basemaps/dynamicOSM_r11.svg" _site/ContainerDemo0.svg
+          grep -q "https://svgmap.github.io/svgmapAppLayers/appLayers/moj/kuwanauchi.svg" _site/ContainerDemo0.svg
           test -f _site/svgmapAppLayers/basemaps/dynamicOSM_r11.svg
           test -f _site/svgmapAppLayers/basemaps/dynamicOSM_r11.html
           ! grep -q 'xlink:href="/svgmapAppLayers/' _site/ContainerDemo0.svg
